@@ -3,7 +3,6 @@ import flet
 from PyPDF2 import *
 import pandas
 import os
-import aspose.pdf as ap
 
 # Definición de colores 
 dark_color = "#222831"
@@ -102,7 +101,7 @@ class Windows(UserControl):
             ),
             width= 120,
             height= 40,
-            on_click= lambda _: self.save_file_picker.save_file(dialog_title="Guardar como", allowed_extensions=["pdf"]),
+            on_click= lambda _: self.save_file_picker.save_file(dialog_title="Guardar como", allowed_extensions= ["pdf"]),
             visible= False
         )
     
@@ -115,9 +114,6 @@ class Windows(UserControl):
         self.action_button.update()
         self.cancel_button.update()
         
-    def savedFun(self, objeto, path, e):
-        print(path)
-    
     def file_picker_result(self, e: FilePickerResultEvent):
         if e.files:
             self.container_files.content.clean() # Limpia los controles para que no haya nada agregado
@@ -153,24 +149,30 @@ class Windows(UserControl):
             self.container_files.update()
             self.action_button.update()
             self.cancel_button.update()
-            
-            merger.write("./.venv/icons/" + "Pdf-merged.pdf")
+            merger.write(e.path + ".pdf")
             merger.close()
             
         elif self.action_button_title == "Dividir":
-            print("Es Div")
-        else:
-            #! Nos quedamos viendo como agregar la pantalla de guardado y menú de opciones
-            #! Además, no fata ver como visualizar la barra de progreso y dividir pdfs
-            pdfOptimizeOptions = ap.optimization.OptimizationOptions()
-            pdfOptimizeOptions.image_compression_options.compress_images = True
-            pdfOptimizeOptions.image_compression_options.image_quality = 5 
+            writer = PdfWriter
             for pdf in self.archivos:
                 self.progress_bar.visible = True
-                compress = ap.Document(pdf)
-                compress.optimize_resources(pdfOptimizeOptions)
-                name = pdf.split("\\")
-                compress.save("Compressed-" + name[-1])
+                reader = PdfReader(pdf)
+                pages = (0, len(reader.pages))   
+                for page_num, page in enumerate(reader.pages, 1):
+                    writer.add_page(page)
+                    path = e.path + page_num + ".pdf"
+                    writer.write(path)
+                    writer.close()
+        else:
+            writer = PdfWriter()
+            for pdf in self.archivos:
+                self.progress_bar.visible = True
+                reader = PdfReader(pdf)
+                for page in reader.pages:
+                    page.compress_content_streams()
+                    writer.add_page(page)
+                writer.write(e.path + ".pdf")
+                writer.close()
                 self.progress_bar.update()
             self.progress_bar.visible = False
             self.container_files.visible = False
@@ -395,7 +397,7 @@ def main(page: Page):
         page.views.append(
             View(
                 "/", 
-                [unir]
+                [body]
             )
         )
         if page.route == "/unir":
@@ -432,4 +434,3 @@ def main(page: Page):
     page.go(page.route)
     
 app(target=main)
-
