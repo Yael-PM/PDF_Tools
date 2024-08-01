@@ -1,8 +1,6 @@
 from flet import *
 import flet
 from PyPDF2 import *
-import pandas
-import os
 
 # Definición de colores 
 dark_color = "#222831"
@@ -73,7 +71,7 @@ class Windows(UserControl):
         self.page.overlay.append(self.file_picker) # Muestra el explorador para poder seleccionar archivos
         self.page.overlay.append(self.save_file_picker) # Muestra el explorador para poder seleccionar archivos
         self.container_files = Container(
-            content= self.list_files,
+            content= self.list_files, # Este container es usado para contener el List View
             bgcolor= self.wcolor,
             height= 250,
             width= 400,
@@ -89,10 +87,10 @@ class Windows(UserControl):
             ),
             width= 120, 
             height= 40,
-            on_click= lambda _: self.cancelFun(),
+            on_click= lambda _: self.cancelFun(), # Manda a llamar a la función cancelar
             visible= False
         )
-        self.action_button = ElevatedButton(
+        self.action_button = ElevatedButton( # El boton nos ayuda a manejar el evento de la acción que queremos hacer 
             self.action_button_title,
             style= ButtonStyle(
                 shape= RoundedRectangleBorder(radius= 10),
@@ -101,11 +99,12 @@ class Windows(UserControl):
             ),
             width= 120,
             height= 40,
+            # El save_file_picker es diferente al file_picker anterior y solo se utliza para sacar el explorador de archivos y obtener el path
             on_click= lambda _: self.save_file_picker.save_file(dialog_title="Guardar como", allowed_extensions= ["pdf"]),
             visible= False
         )
     
-    def cancelFun(self):
+    def cancelFun(self): # La función es utilzada para ocultar y limpiar todos los elementos del contenedor de los archivos
         self.container_files.visible = False
         self.container_files.clean()
         self.action_button.visible = False
@@ -153,16 +152,27 @@ class Windows(UserControl):
             merger.close()
             
         elif self.action_button_title == "Dividir":
-            writer = PdfWriter
+            writer = PdfWriter()
+            print(self.archivos)
             for pdf in self.archivos:
                 self.progress_bar.visible = True
                 reader = PdfReader(pdf)
-                pages = (0, len(reader.pages))   
                 for page_num, page in enumerate(reader.pages, 1):
                     writer.add_page(page)
-                    path = e.path + page_num + ".pdf"
-                    writer.write(path)
-                    writer.close()
+                    path = f"{e.path}{page_num}.pdf"
+                    with open(path, "wb") as output:
+                        writer.write(output)
+            self.progress_bar.visible = False
+            self.container_files.visible = False
+            self.cancel_button.visible = False
+            self.action_button.visible = False
+            self.list_files.clean()
+            self.container_files.clean()
+            self.progress_bar.update()
+            self.container_files.update()
+            self.action_button.update()
+            self.cancel_button.update() 
+            print(self.archivos)       
         else:
             writer = PdfWriter()
             for pdf in self.archivos:
